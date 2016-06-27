@@ -22,6 +22,7 @@ module Sepa
         %i(
           create_certificate
           get_bank_certificate
+          renew_certificate
          )
       when :op
         STANDARD_COMMANDS -

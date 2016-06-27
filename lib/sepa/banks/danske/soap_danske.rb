@@ -18,6 +18,8 @@ module Sepa
           build_danske_generic_request
         when :get_bank_certificate
           build_get_bank_certificate_request
+        when :renew_certificate
+          build_renew_certificate_request
         end
       end
 
@@ -108,6 +110,15 @@ module Sepa
         set_node(@template, 'pkif|InterfaceVersion', 1)
       end
 
+      def set_renew_cert_contents
+        set_node(@template, 'pkif|SenderId', @customer_id)
+        set_node(@template, 'pkif|CustomerId', @customer_id)
+        set_node(@template, 'pkif|RequestId', request_id)
+        set_node(@template, 'pkif|Timestamp', iso_time)
+        set_node(@template, 'pkif|InterfaceVersion', 1)
+        set_node(@template, 'pkif|Environment', @environment)
+      end
+
       # Builds Danske Bank's generic request soap. The processing order is as follows:
       # 1. The contents of the soap are set
       # 2. The application request is encrypted
@@ -146,6 +157,13 @@ module Sepa
         add_bank_certificate_body_to_soap
       end
 
+      def build_renew_certificate_request
+        @environment = :customertest if @environment == :test
+        set_renew_cert_contents
+        encrypted_request = encrypt_application_request
+        add_encrypted_request_to_soap(encrypted_request)
+      end
+
       # Adds encrypted application request xml structure to the soap. This method is used when
       # building create certificate requests and the encrypted application request xml structure
       # will not be base64 encoded.
@@ -155,7 +173,13 @@ module Sepa
       def add_encrypted_request_to_soap(encrypted_request)
         encrypted_request = Nokogiri::XML(encrypted_request.to_xml)
         encrypted_request = encrypted_request.root
-        @template.at_css('pkif|CreateCertificateIn').add_child(encrypted_request)
+        case @command
+        when :create_certificate
+          main_node = 'pkif|CreateCertificateIn'
+        when :renew_certificate
+          main_node = 'pkif|RenewCertificateIn'
+        end
+        @template.at_css(main_node).add_child(encrypted_request)
 
         @template
       end

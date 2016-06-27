@@ -163,6 +163,7 @@ module Sepa
       def set_common_nodes
         return if @command == :get_bank_certificate
         return if @command == :create_certificate
+        return if @command == :renew_certificate
 
         set_node('Environment', @environment.to_s.upcase)
         set_node("CustomerId", @customer_id)
